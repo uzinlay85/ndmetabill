@@ -184,3 +184,24 @@ tbody tr:hover {
         color-adjust: exact;
     }
 }
+/* --- Existing CSS code here... --- */
+
+/* New styles for filter inputs in the table header */
+.filter-input {
+    width: 95%; /* Take up most of the cell width */
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for padding and width */
+    font-family: 'Pyidaungsu', sans-serif;
+}
+
+/* Adjustments for print to hide filters */
+@media print {
+    /* ... other print styles ... */
+    .filter-row {
+        display: none; /* Hide the filter row when printing */
+    }
+}
+
