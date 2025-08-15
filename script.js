@@ -116,9 +116,10 @@ function generateBillEntryForm() {
     billData.forEach((record, index) => {
         const row = document.createElement('div');
         row.className = 'bill-entry-row';
+        // *** THIS IS THE CHANGED LINE ***
         row.innerHTML = `
             <label>${record['ကျောင်း']} (${record['စာရင်းအမှတ်']})</label>
-            <input type="number" id="bill_${index}" placeholder="ဘေလ်ပမာဏ" min="0">
+            <input type="text" id="bill_${index}" placeholder="ဘေလ်ပမာဏ" inputmode="numeric" pattern="[0-9]*">
             <span>ကျပ်</span>
         `;
         container.appendChild(row);
@@ -137,6 +138,8 @@ function loadCurrentMonthData() {
         if (input && record[selectedMonth]) {
             const amount = convertMyanmarToEnglishNumbers(record[selectedMonth]);
             input.value = amount || '';
+        } else {
+            input.value = ''; // Clear the input if no data for the month
         }
     });
 }
@@ -153,10 +156,15 @@ function saveBillData() {
         const input = document.getElementById(`bill_${index}`);
         if (input) {
             const newValue = input.value.trim();
-            const myanmarValue = newValue ? convertEnglishToMyanmarNumbers(newValue) : '';
-            if (record[selectedMonth] !== myanmarValue) {
-                record[selectedMonth] = myanmarValue;
-                hasChanges = true;
+            // Ensure only numbers are processed
+            if (/^\d*$/.test(newValue)) {
+                const myanmarValue = newValue ? convertEnglishToMyanmarNumbers(newValue) : '';
+                if (record[selectedMonth] !== myanmarValue) {
+                    record[selectedMonth] = myanmarValue;
+                    hasChanges = true;
+                }
+            } else {
+                alert(`"${record['ကျောင်း']}" အတွက် ထည့်သွင်းမှုသည် ဂဏန်းများသာ ဖြစ်ရပါမည်။`);
             }
         }
     });
@@ -239,12 +247,12 @@ function renderTable(dataToRender) {
 
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
-        row.insertCell().textContent = index + 1;
+        row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
         row.insertCell().textContent = record['ကျောင်း'] || '-';
         row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
         row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
         row.insertCell().textContent = record.displayMonth;
-        row.insertCell().textContent = formatNumber(record.displayAmount);
+        row.insertCell().textContent = convertEnglishToMyanmarNumbers(formatNumber(record.displayAmount));
     });
 }
 
