@@ -164,5 +164,37 @@ tbody tr:hover {
         color-adjust: exact;
     }
 }
+/* --- Existing CSS code here... --- */
+
+/* New styles for the summary info box */
+.summary-info {
+    background-color: #e9f5ff;
+    border: 1px solid #bce8f1;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around; /* Distribute items evenly */
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.summary-item {
+    font-size: 1.1em;
+    color: #31708f;
+}
+
+.summary-item strong {
+    color: #0056b3;
+}
+
+/* Add this to print styles to hide the summary box in PDF */
+@media print {
+    /* ... other print styles ... */
+    .summary-info {
+        display: none;
+    }
+}
+
 
 
