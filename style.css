@@ -1,25 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap' );
+
 body {
-    font-family: 'Padauk', 'Myanmar3', sans-serif;
+    font-family: 'Pyidaungsu', sans-serif;
     background-color: #f4f4f9;
     color: #333;
     margin: 0;
     padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Changed to flex-start for better view */
+    align-items: flex-start;
     min-height: 100vh;
 }
 
 .container {
     width: 100%;
-    max-width: 900px; /* Increased width for table */
+    max-width: 900px;
     background: #fff;
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* Remove or replace the old h1 style with this */
 .header-title {
     text-align: center;
     margin-bottom: 30px;
@@ -27,25 +28,24 @@ body {
 }
 
 .title-line-1 {
-    font-size: 1.2em; /* 1st line slightly smaller */
+    font-size: 1.2em;
     font-weight: normal;
 }
 
 .title-line-2 {
-    font-size: 1.5em; /* 2nd line is the main title, so bigger */
+    font-size: 1.5em;
     font-weight: bold;
     margin: 5px 0;
 }
 
 .title-line-3 {
-    font-size: 1.3em; /* 3rd line */
+    font-size: 1.3em;
     font-weight: normal;
 }
 
-
 .controls {
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     gap: 15px;
@@ -56,7 +56,7 @@ body {
     flex-grow: 1;
     display: flex;
     gap: 10px;
-    min-width: 300px; /* Ensure search box doesn't get too small */
+    min-width: 300px;
 }
 
 #searchInput {
@@ -65,6 +65,7 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
+    font-family: 'Pyidaungsu', sans-serif; /* Ensure input also uses the font */
 }
 
 button {
@@ -75,6 +76,7 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+    font-family: 'Pyidaungsu', sans-serif; /* Ensure buttons also use the font */
 }
 
 button:hover {
@@ -82,21 +84,41 @@ button:hover {
 }
 
 #exportPdfButton {
-    background-color: #28a745; /* Green color for export */
+    background-color: #28a745;
 }
 
 #exportPdfButton:hover {
     background-color: #218838;
 }
 
+.summary-info {
+    background-color: #e9f5ff;
+    border: 1px solid #bce8f1;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.summary-item {
+    font-size: 1.1em;
+    color: #31708f;
+}
+
+.summary-item strong {
+    color: #0056b3;
+}
+
 #results {
     margin-top: 20px;
 }
 
-/* Table Styles */
 table {
     width: 100%;
-    border-collapse: collapse; /* Makes table borders neat */
+    border-collapse: collapse;
     margin-top: 20px;
 }
 
@@ -112,21 +134,19 @@ thead {
 }
 
 tbody tr:nth-child(even) {
-    background-color: #f2f2f2; /* Makes table rows easier to read */
+    background-color: #f2f2f2;
 }
 
 tbody tr:hover {
     background-color: #e9f5ff;
 }
 
-
-/* --- Print-Specific Styles --- */
-/* This code runs ONLY when printing or saving as PDF */
 @media print {
     body {
-        background-color: #fff; /* Ensure white background for printing */
+        background-color: #fff;
         padding: 0;
         margin: 0;
+        font-family: 'Pyidaungsu', sans-serif !important; /* Ensure print uses the font */
     }
     
     .container {
@@ -136,26 +156,26 @@ tbody tr:hover {
         padding: 0;
     }
 
-    h1, .controls {
-        display: none; /* Hide the title and all control buttons */
+    .header-title, .controls, .summary-info {
+        display: none;
     }
 
     table {
         margin-top: 0;
-        border: 1px solid #000; /* Make border visible in print */
+        border: 1px solid #000;
     }
 
     th, td {
         border: 1px solid #ccc;
         padding: 8px;
-        font-size: 10pt; /* Smaller font for print */
+        font-size: 10pt;
     }
 
     thead {
-        background-color: #eee !important; /* Use a light grey for print */
-        color: #000 !important; /* Ensure text is black */
-        -webkit-print-color-adjust: exact; /* Force background color printing in Chrome/Safari */
-        color-adjust: exact; /* Standard property */
+        background-color: #eee !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
     }
     
     tbody tr:nth-child(even) {
@@ -164,37 +184,3 @@ tbody tr:hover {
         color-adjust: exact;
     }
 }
-/* --- Existing CSS code here... --- */
-
-/* New styles for the summary info box */
-.summary-info {
-    background-color: #e9f5ff;
-    border: 1px solid #bce8f1;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-around; /* Distribute items evenly */
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.summary-item {
-    font-size: 1.1em;
-    color: #31708f;
-}
-
-.summary-item strong {
-    color: #0056b3;
-}
-
-/* Add this to print styles to hide the summary box in PDF */
-@media print {
-    /* ... other print styles ... */
-    .summary-info {
-        display: none;
-    }
-}
-
-
-
