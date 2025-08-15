@@ -308,3 +308,70 @@ function setupFiltersAndTable(data, latestMonth) {
     schoolFilter.id = 'filter-dropdown-ကျောင်း';
     schoolFilter.innerHTML = `<option value="">ကျောင်းအားလုံး</option>`;
     [...new Set(data.map(r => r['ကျောင်း']))].sort().forEach(school => {
+        schoolFilter.innerHTML += `<option value="${school}">${school}</option>`;
+    });
+    schoolFilter.onchange = applyFiltersAndRender;
+    schoolTd.appendChild(schoolFilter);
+
+    filterRow.insertCell();
+    filterRow.insertCell();
+
+    const monthTd = filterRow.insertCell();
+    const monthFilter = document.createElement('select');
+    monthFilter.className = 'filter-input';
+    monthFilter.id = 'filter-dropdown-လ';
+    monthFilter.innerHTML = `<option value="all">လအားလုံး</option>`;
+    MONTH_HEADERS.forEach(month => {
+        monthFilter.innerHTML += `<option value="${month}">${month}</option>`;
+    });
+    if (latestMonth) monthFilter.value = latestMonth;
+    monthFilter.onchange = applyFiltersAndRender;
+    monthTd.appendChild(monthFilter);
+
+    filterRow.insertCell();
+    table.createTBody();
+    resultsContainer.appendChild(table);
+}
+
+function exportToPdf() {
+    window.print();
+}
+
+// --- INITIALIZATION & EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('data.csv');
+        if (!response.ok) throw new Error(`'data.csv' ဖိုင်ကို ရှာမတွေ့ပါ သို့မဟုတ် folder တစ်ခုတည်းတွင် မရှိပါ။`);
+        const csvText = await response.text();
+        billData = parseCSV(csvText);
+        if (billData.length === 0) throw new Error("'data.csv' ဖိုင်ထဲတွင် အချက်အလက်မရှိပါ။");
+        
+        const latestMonth = getLatestMonthWithData(billData);
+        setupFiltersAndTable(billData, latestMonth);
+        displaySummary(billData);
+        applyFiltersAndRender();
+        
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById('results').innerHTML = `<p style="color: red; font-weight: bold;">Error: ${error.message}</p>`;
+    }
+
+    // Modal close buttons
+    document.getElementById('closeLoginModal').addEventListener('click', () => adminLoginModal.style.display = 'none');
+    document.getElementById('closeEditModal').addEventListener('click', () => editDataModal.style.display = 'none');
+    window.addEventListener('click', (event) => {
+        if (event.target === adminLoginModal) adminLoginModal.style.display = 'none';
+        if (event.target === editDataModal) editDataModal.style.display = 'none';
+    });
+
+    // Admin functionality
+    document.getElementById('adminBtn').addEventListener('click', () => adminLoginModal.style.display = 'block');
+    document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+    document.getElementById('logoutBtn').addEventListener('click', hideAdminPanel);
+    
+    // Data entry and management forms
+    document.getElementById('dataEntryForm').addEventListener('submit', saveBillData);
+    document.getElementById('loadDataBtn').addEventListener('click', loadCurrentMonthData);
+    document.getElementById('editDataForm').addEventListener('submit', handleEditFormSubmit);
+    document.getElementById('downloadCsvBtn').addEventListener('click', downloadCSV);
+});
