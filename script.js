@@ -1,77 +1,108 @@
-// ဒေတာကို CSV ဖိုင်မှ ကြိုတင် load လုပ်ထားရန်
+// Global variable to hold all bill data
 let billData = [];
+let tableHeaders = [];
 
-// ဝဘ်ဆိုဒ်စဖွင့်ဖွင့်ချင်း CSV ဖိုင်ကို fetch လုပ်ပါ
-window.onload = async () => {
-    try {
-        const response = await fetch('data.csv'); // သင်၏ CSV ဖိုင်အမည်
-        const csvText = await response.text();
-        // CSV text ကို array of objects အဖြစ်ပြောင်းပါ
-        billData = parseCSV(csvText);
-    } catch (error) {
-        console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
-        document.getElementById('results').innerText = "ဒေတာဖိုင်ကို ဖတ်ရှုရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။";
-    }
-};
-
-// CSV text ကို JSON array format သို့ပြောင်းလဲပေးသော function
+// Function to parse CSV text into an array of objects
 function parseCSV(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
-    const headers = lines[0].split(',');
+    const headers = lines[0].split(',').map(h => h.trim());
+    tableHeaders = headers; // Store headers for later use
+
     const data = lines.slice(1).map(line => {
         const values = line.split(',');
         let obj = {};
         headers.forEach((header, i) => {
-            obj[header.trim()] = values[i] ? values[i].trim() : '';
+            obj[header] = values[i] ? values[i].trim() : '';
         });
         return obj;
     });
     return data;
 }
 
-// နောက်ဆုံးဘေလ်ဆောင်ထားသောလကို ရှာပေးသော function
-function findLastPaidMonth(record) {
+// Function to find the last paid month and its amount
+function findLastPaidDetails(record) {
+    // Search from month 12 down to 1
     const months = ['၁၂-လပိုင်း', '၁၁-လပိုင်း', '၁၀-လပိုင်း', '၉-လပိုင်း', '၈-လပိုင်း', '၇-လပိုင်း', '၆-လပိုင်း', '၅-လပိုင်း', '၄-လပိုင်း', '၃-လပိုင်း', '၂-လပိုင်း', '၁-လပိုင်း'];
     for (const month of months) {
+        // Check if the month exists as a header and has a value
         if (record[month] && record[month].trim() !== '') {
-            return month;
+            return { month: month, amount: record[month] };
         }
     }
-    return "မတွေ့ရှိပါ";
+    return { month: "မတွေ့ရှိပါ", amount: "-" };
 }
 
-// ရှာဖွေမှုပြုလုပ်သော အဓိက function
+// Function to display data in a table
+function displayTable(data) {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = ''; // Clear previous results
+
+    if (data.length === 0) {
+        resultsContainer.innerHTML = '<p>ရှာဖွေမှုနှင့် ကိုက်ညီသော အချက်အလက် မရှိပါ။</p>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    
+    // Create Table Header
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    const displayHeaders = ['စဉ်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'နောက်ဆုံးဘေလ်ဆောင်လ', 'ဘေလ်ပမာဏ'];
+    displayHeaders.forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+
+    // Create Table Body
+    const tbody = table.createTBody();
+    data.forEach(record => {
+        // Skip the summary row if it exists
+        if (record['စဉ်'] && record['စဉ်'].includes('စုစုပေါင်း')) return;
+
+        const lastPaid = findLastPaidDetails(record);
+        const row = tbody.insertRow();
+        
+        row.insertCell().textContent = record['စဉ်'] || '-';
+        row.insertCell().textContent = record['ကျောင်း'] || '-';
+        row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
+        row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
+        row.insertCell().textContent = lastPaid.month;
+        row.insertCell().textContent = lastPaid.amount;
+    });
+
+    resultsContainer.appendChild(table);
+}
+
+// Main search function
 function searchBill() {
     const query = document.getElementById('searchInput').value.toLowerCase().trim();
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = ''; // ရလဒ်အဟောင်းများကိုရှင်း
 
+    // If search query is empty, show all data
     if (query === '') {
-        resultsContainer.innerHTML = '<p>ကျေးဇူးပြု၍ ရှာဖွေလိုသောအရာကို ရိုက်ထည့်ပါ။</p>';
+        displayTable(billData);
         return;
     }
 
     const filteredData = billData.filter(record => {
-        return record['အမည်']?.toLowerCase().includes(query) ||
-               record['ကျောင်း']?.toLowerCase().includes(query) ||
-               record['စာရင်းအမှတ်']?.toLowerCase().includes(query) ||
-               record['မီတာအမှတ်']?.toLowerCase().includes(query);
+        // Check if any value in the record contains the query
+        return Object.values(record).some(value => 
+            value && value.toLowerCase().includes(query)
+        );
     });
 
-    if (filteredData.length > 0) {
-        filteredData.forEach(record => {
-            const lastPaidMonth = findLastPaidMonth(record);
-            const resultItem = document.createElement('div');
-            resultItem.className = 'result-item';
-            resultItem.innerHTML = `
-                <p><strong>ကျောင်းအမည်:</strong> ${record['ကျောင်း']}</p>
-                <p><strong>စာရင်းအမှတ်:</strong> ${record['စာရင်းအမှတ်']}</p>
-                <p><strong>မီတာအမှတ်:</strong> ${record['မီတာအမှတ်']}</p>
-                <p><strong>နောက်ဆုံးဘေလ်ဆောင်လ:</strong> ${lastPaidMonth}</p>
-            `;
-            resultsContainer.appendChild(resultItem);
-        });
-    } else {
-        resultsContainer.innerHTML = '<p>ရှာဖွေမှုနှင့် ကိုက်ညီသော အချက်အလက် မရှိပါ။</p>';
-    }
+    displayTable(filteredData);
 }
+
+// Load data and display the full table when the page loads
+window.onload = async () => {
+    try {
+        const response = await fetch('data.csv');
+        const csvText = await response.text();
+        billData = parseCSV(csvText);
+        displayTable(billData); // Display the full table initially
+    } catch (error) {
+        console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
+        document.getElementById('results').innerText = "ဒေတာဖိုင်ကို ဖတ်ရှုရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။";
+    }
+};
