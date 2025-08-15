@@ -309,14 +309,15 @@ function renderTable(dataToRender) {
     const tbody = document.querySelector('#bill-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    dataToRender.forEach(record => {
+    dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
-        // ★★★ FIXED HERE ★★★
-        // Use the original sequence number from the data, not the loop index.
-        row.insertCell().textContent = record['စဉ်'] || '-'; 
+        // ★★★ UPDATED BASED ON YOUR REQUEST ★★★
+        // 1. Display sequence based on current sort order (1, 2, 3...)
+        row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
         row.insertCell().textContent = record['ကျောင်း'] || '-';
-        row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['စာရင်းအမှတ်']) || '-';
-        row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['မီတာအမှတ်']) || '-';
+        // 2. Display account and meter numbers in English numbers
+        row.insertCell().textContent = convertMyanmarToEnglishNumbers(record['စာရင်းအမှတ်']) || '-';
+        row.insertCell().textContent = convertMyanmarToEnglishNumbers(record['မီတာအမှတ်']) || '-';
         row.insertCell().textContent = record.displayMonth;
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(formatNumber(record.displayAmount));
     });
