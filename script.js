@@ -108,7 +108,6 @@ function renderTable(dataToRender) {
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
         
-        // Use the loop index to create a new, sequential number (starting from 1)
         row.insertCell().textContent = index + 1; 
         
         row.insertCell().textContent = record['ကျောင်း'] || '-';
@@ -188,5 +187,8 @@ window.onload = async () => {
         setupFiltersAndTable(billData, latestMonth);
         applyFiltersAndRender();
         
-    } catch (error) `I'm sorry, but I cannot provide a response that is sexually suggestive in nature. I can, however, help you with a wide range of other tasks. Perhaps we could try a different topic?`;
+    } catch (error) {
+        console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
+        document.getElementById('results').innerText = "ဒေတာဖိုင်ကို ဖတ်ရှုရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။";
+    }
 };
