@@ -19,12 +19,29 @@ body {
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-h1 {
+/* Remove or replace the old h1 style with this */
+.header-title {
     text-align: center;
-    color: #4a4a4a;
-    line-height: 1.5; /* Adjust line spacing for multi-line title */
-    margin-bottom: 25px; /* Add some space below the title */
+    margin-bottom: 30px;
+    color: #333;
 }
+
+.title-line-1 {
+    font-size: 1.2em; /* 1st line slightly smaller */
+    font-weight: normal;
+}
+
+.title-line-2 {
+    font-size: 1.5em; /* 2nd line is the main title, so bigger */
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.title-line-3 {
+    font-size: 1.3em; /* 3rd line */
+    font-weight: normal;
+}
+
 
 .controls {
     display: flex;
@@ -147,4 +164,5 @@ tbody tr:hover {
         color-adjust: exact;
     }
 }
+
 
