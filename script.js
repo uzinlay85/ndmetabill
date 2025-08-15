@@ -1,7 +1,7 @@
 // --- GLOBAL VARIABLES ---
 let billData = [];
 let isAdminLoggedIn = false;
-const ADMIN_PASSWORD = "Ashin@135"; // Change this to your desired password
+const ADMIN_PASSWORD = "admin123"; // Change this to your desired password
 const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 const DISPLAY_HEADERS = ['စဉ်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရွေးချယ်ထားသောလ', 'ဘေလ်ပမာဏ'];
 
