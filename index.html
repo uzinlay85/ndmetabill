@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>မီတာဘေလ်စာရင်း</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Pyidaungsu Font from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu:wght@400;700&display=swap" rel="stylesheet">
@@ -13,26 +12,18 @@
 <body>
     <div class="container">
         <div class="header">
-            <!-- Headers will be on separate lines -->
             <h1>ရန်ကုန်တိုင်းဒေသကြီး - ဗဟန်းမြို့နယ်</h1>
             <h1>ပါဠိတက္ကသိုလ်ညောင်တုန်းကျောင်းတိုက်</h1>
             <h1>လျှပ်စစ်မီတာဘေလ်စာရင်း</h1>
         </div>
-
-        <!-- The main search bar is removed. PDF button is moved to a new container. -->
         <div class="top-controls">
             <button onclick="exportToPdf( )" class="pdf-button">PDF အဖြစ် သိမ်းမည်</button>
         </div>
-
-        <div id="summary-info" class="summary-container">
-            <!-- Summary info will be loaded by JavaScript -->
-        </div>
-
+        <div id="summary-info" class="summary-container"></div>
         <div id="results">
-            <!-- Table will be loaded by JavaScript -->
+            <p>ဒေတာများကို တင်နေပါသည်...</p>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
