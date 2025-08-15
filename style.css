@@ -204,4 +204,28 @@ tbody tr:hover {
         display: none; /* Hide the filter row when printing */
     }
 }
+/* --- Existing CSS code here... --- */
+
+/* New styles for the container holding the PDF button */
+.top-controls {
+    display: flex;
+    justify-content: flex-end; /* Align button to the right */
+    margin-bottom: 20px; /* Space below the button */
+}
+
+.pdf-button {
+    background-color: #28a745; /* Green color */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: 'Pyidaungsu', sans-serif;
+}
+
+.pdf-button:hover {
+    background-color: #218838;
+}
+
 
