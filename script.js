@@ -29,7 +29,9 @@ function getLatestMonthWithData(data) {
 
 // --- CORE LOGIC ---
 function parseCSV(text) {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+
     const headers = lines[0].split(',').map(h => h.trim());
     const data = lines.slice(1).map(line => {
         const values = line.split(',');
@@ -103,13 +105,11 @@ function displaySummary(data) {
 
 function renderTable(dataToRender) {
     const tbody = document.querySelector('#bill-table tbody');
-    tbody.innerHTML = ''; // Clear existing rows
+    tbody.innerHTML = '';
 
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
-        
-        row.insertCell().textContent = index + 1; 
-        
+        row.insertCell().textContent = index + 1;
         row.insertCell().textContent = record['ကျောင်း'] || '-';
         row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
         row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
@@ -134,7 +134,7 @@ function setupFiltersAndTable(data, latestMonth) {
     const filterRow = thead.insertRow();
     filterRow.className = 'filter-row';
     
-    filterRow.insertCell(); // စဉ်
+    filterRow.insertCell();
     
     const schoolTd = filterRow.insertCell();
     const schoolFilter = document.createElement('select');
@@ -147,8 +147,8 @@ function setupFiltersAndTable(data, latestMonth) {
     schoolFilter.onchange = applyFiltersAndRender;
     schoolTd.appendChild(schoolFilter);
 
-    filterRow.insertCell(); // စာရင်းအမှတ်
-    filterRow.insertCell(); // မီတာအမှတ်
+    filterRow.insertCell();
+    filterRow.insertCell();
 
     const monthTd = filterRow.insertCell();
     const monthFilter = document.createElement('select');
@@ -164,7 +164,7 @@ function setupFiltersAndTable(data, latestMonth) {
     monthFilter.onchange = applyFiltersAndRender;
     monthTd.appendChild(monthFilter);
 
-    filterRow.insertCell(); // ဘေလ်ပမာဏ
+    filterRow.insertCell();
 
     table.createTBody();
     resultsContainer.appendChild(table);
@@ -175,11 +175,18 @@ function exportToPdf() {
 }
 
 // --- INITIALIZATION ---
-window.onload = async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         const response = await fetch('data.csv');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}. 'data.csv' ဖိုင်ကို ရှာမတွေ့ပါ သို့မဟုတ် folder တစ်ခုတည်းတွင် မရှိပါ။`);
+        }
         const csvText = await response.text();
         billData = parseCSV(csvText);
+
+        if (billData.length === 0) {
+            throw new Error("'data.csv' ဖိုင်ထဲတွင် အချက်အလက်မရှိပါ သို့မဟုတ် format မှားယွင်းနေပါသည်။");
+        }
         
         const latestMonth = getLatestMonthWithData(billData);
         
@@ -188,7 +195,7 @@ window.onload = async () => {
         applyFiltersAndRender();
         
     } catch (error) {
-        console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
-        document.getElementById('results').innerText = "ဒေတာဖိုင်ကို ဖတ်ရှုရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။";
+        console.error("Error:", error);
+        document.getElementById('results').innerHTML = `<p style="color: red; font-weight: bold;">Error: ${error.message}</p>`;
     }
-};
+});
