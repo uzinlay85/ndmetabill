@@ -2,17 +2,16 @@
 let billData = [];
 const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 
-// NEW: Function to convert Myanmar numbers to English numbers
+// Function to convert Myanmar numbers to English numbers
 function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
     if (typeof myanmarNumberStr !== 'string') {
-        return myanmarNumberStr; // Return as is if not a string
+        return myanmarNumberStr;
     }
     const myanmarNumbers = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
     const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     
     let result = myanmarNumberStr;
     for (let i = 0; i < 10; i++) {
-        // Use a regular expression with the 'g' flag to replace all occurrences
         result = result.replace(new RegExp(myanmarNumbers[i], "g"), englishNumbers[i]);
     }
     return result;
@@ -61,18 +60,23 @@ function displaySummary(data) {
     let latestMonthTotal = 0;
     if (latestMonth) {
         latestMonthTotal = data.reduce((sum, record) => {
-            // UPDATED: Convert numbers before parsing
             const englishAmount = convertMyanmarToEnglishNumbers(record[latestMonth]);
             const amount = parseInt(englishAmount, 10) || 0;
             return sum + amount;
         }, 0);
     }
 
-    const yearTotal = data.reduce((sum, record) => {
-        // UPDATED: Convert numbers before parsing
-        const englishAmount = convertMyanmarToEnglishNumbers(record['စုပေါင်း']);
-        const amount = parseInt(englishAmount, 10) || 0;
-        return sum + amount;
+    // UPDATED: Calculate total for the year by summing up ALL monthly bills for each record
+    const yearTotal = data.reduce((totalSum, record) => {
+        let recordTotal = 0;
+        MONTH_HEADERS.forEach(month => {
+            if (record[month]) {
+                const englishAmount = convertMyanmarToEnglishNumbers(record[month]);
+                const amount = parseInt(englishAmount, 10) || 0;
+                recordTotal += amount;
+            }
+        });
+        return totalSum + recordTotal;
     }, 0);
 
     const formatNumber = (num) => num.toLocaleString('en-US');
@@ -112,7 +116,6 @@ function displayTable(data) {
         const lastPaid = findLastPaidDetails(record);
         const row = tbody.insertRow();
         
-        // UPDATED: Convert number before displaying
         const englishAmount = convertMyanmarToEnglishNumbers(lastPaid.amount);
         const formattedAmount = (parseInt(englishAmount, 10) || 0).toLocaleString('en-US');
 
