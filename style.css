@@ -343,3 +343,30 @@ body {
     #bill-table th, #bill-table td { padding: 8px; font-size: 10pt; }
     .admin-panel, .modal { display: none !important; }
 }
+/* Add this to the end of your style.css file for notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    background-color: #007bff; /* Default info color */
+    color: white;
+    font-family: 'Pyidaungsu', sans-serif;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateX(calc(100% + 20px));
+    transition: transform 0.5s ease-in-out;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background-color: #28a745; /* Green for success */
+}
+
+.notification.error {
+    background-color: #dc3545; /* Red for error */
+}
