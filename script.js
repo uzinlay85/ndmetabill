@@ -1,13 +1,12 @@
 // Global variable to hold all bill data
 let billData = [];
-let tableHeaders = [];
+const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 
 // Function to parse CSV text into an array of objects
 function parseCSV(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
     const headers = lines[0].split(',').map(h => h.trim());
-    tableHeaders = headers; // Store headers for later use
-
+    
     const data = lines.slice(1).map(line => {
         const values = line.split(',');
         let obj = {};
@@ -16,15 +15,13 @@ function parseCSV(text) {
         });
         return obj;
     });
-    return data;
+    return data.filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း')); // Filter out the total row
 }
 
 // Function to find the last paid month and its amount
 function findLastPaidDetails(record) {
-    // Search from month 12 down to 1
-    const months = ['၁၂-လပိုင်း', '၁၁-လပိုင်း', '၁၀-လပိုင်း', '၉-လပိုင်း', '၈-လပိုင်း', '၇-လပိုင်း', '၆-လပိုင်း', '၅-လပိုင်း', '၄-လပိုင်း', '၃-လပိုင်း', '၂-လပိုင်း', '၁-လပိုင်း'];
-    for (const month of months) {
-        // Check if the month exists as a header and has a value
+    for (let i = MONTH_HEADERS.length - 1; i >= 0; i--) {
+        const month = MONTH_HEADERS[i];
         if (record[month] && record[month].trim() !== '') {
             return { month: month, amount: record[month] };
         }
@@ -32,10 +29,53 @@ function findLastPaidDetails(record) {
     return { month: "မတွေ့ရှိပါ", amount: "-" };
 }
 
+// Function to calculate and display summary information
+function displaySummary(data) {
+    const summaryContainer = document.getElementById('summary-info');
+    
+    // 1. Find the latest month with any data
+    let latestMonth = '';
+    for (let i = MONTH_HEADERS.length - 1; i >= 0; i--) {
+        const month = MONTH_HEADERS[i];
+        if (data.some(record => record[month] && record[month].trim() !== '')) {
+            latestMonth = month;
+            break;
+        }
+    }
+
+    // 2. Calculate total for the latest month
+    let latestMonthTotal = 0;
+    if (latestMonth) {
+        latestMonthTotal = data.reduce((sum, record) => {
+            const amount = parseInt(record[latestMonth], 10) || 0;
+            return sum + amount;
+        }, 0);
+    }
+
+    // 3. Calculate total for the year from the 'စုပေါင်း' column
+    const yearTotal = data.reduce((sum, record) => {
+        const amount = parseInt(record['စုပေါင်း'], 10) || 0;
+        return sum + amount;
+    }, 0);
+
+    // Format numbers with commas
+    const formatNumber = (num) => num.toLocaleString('en-US');
+
+    // 4. Display the summary
+    summaryContainer.innerHTML = `
+        <div class="summary-item">
+            ယခုလ (${latestMonth || 'N/A'}) မီတာဘေလ် = <strong>${formatNumber(latestMonthTotal)} ကျပ်</strong>
+        </div>
+        <div class="summary-item">
+            ယခုနှစ် (${new Date().getFullYear()}) မီတာဘေလ် = <strong>${formatNumber(yearTotal)} ကျပ်</strong>
+        </div>
+    `;
+}
+
 // Function to display data in a table
 function displayTable(data) {
     const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = ''; // Clear previous results
+    resultsContainer.innerHTML = ''; 
 
     if (data.length === 0) {
         resultsContainer.innerHTML = '<p>ရှာဖွေမှုနှင့် ကိုက်ညီသော အချက်အလက် မရှိပါ။</p>';
@@ -43,8 +83,6 @@ function displayTable(data) {
     }
 
     const table = document.createElement('table');
-    
-    // Create Table Header
     const thead = table.createTHead();
     const headerRow = thead.insertRow();
     const displayHeaders = ['စဉ်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'နောက်ဆုံးဘေလ်ဆောင်လ', 'ဘေလ်ပမာဏ'];
@@ -54,12 +92,8 @@ function displayTable(data) {
         headerRow.appendChild(th);
     });
 
-    // Create Table Body
     const tbody = table.createTBody();
     data.forEach(record => {
-        // Skip the summary row if it exists
-        if (record['စဉ်'] && record['စဉ်'].includes('စုစုပေါင်း')) return;
-
         const lastPaid = findLastPaidDetails(record);
         const row = tbody.insertRow();
         
@@ -68,7 +102,7 @@ function displayTable(data) {
         row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
         row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
         row.insertCell().textContent = lastPaid.month;
-        row.insertCell().textContent = lastPaid.amount;
+        row.insertCell().textContent = (parseInt(lastPaid.amount, 10) || 0).toLocaleString('en-US');
     });
 
     resultsContainer.appendChild(table);
@@ -77,36 +111,28 @@ function displayTable(data) {
 // Main search function
 function searchBill() {
     const query = document.getElementById('searchInput').value.toLowerCase().trim();
-
-    // If search query is empty, show all data
-    if (query === '') {
-        displayTable(billData);
-        return;
-    }
-
-    const filteredData = billData.filter(record => {
-        // Check if any value in the record contains the query
+    const filteredData = query === '' ? billData : billData.filter(record => {
         return Object.values(record).some(value => 
             value && value.toLowerCase().includes(query)
         );
     });
-
     displayTable(filteredData);
 }
 
-// Function to handle PDF export
 function exportToPdf() {
-    // This command opens the browser's print dialog
     window.print();
 }
 
-// Load data and display the full table when the page loads
+// Load data and initialize the page
 window.onload = async () => {
     try {
         const response = await fetch('data.csv');
         const csvText = await response.text();
         billData = parseCSV(csvText);
-        displayTable(billData); // Display the full table initially
+        
+        displaySummary(billData); // Display the summary first
+        displayTable(billData);   // Then display the full table
+        
     } catch (error) {
         console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
         document.getElementById('results').innerText = "ဒေတာဖိုင်ကို ဖတ်ရှုရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။";
