@@ -153,7 +153,9 @@ function openEditModal(index) {
     fieldsContainer.innerHTML = '';
 
     MONTH_HEADERS.forEach(month => {
-        const value = record[month] ? convertMyanmarToEnglishNumbers(record[month]) : '';
+        // ★★★ FIXED HERE ★★★ Remove commas before displaying in input
+        const numStr = record[month] || '';
+        const value = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
         const fieldGroup = document.createElement('div');
         fieldGroup.className = 'edit-field-group';
         fieldGroup.innerHTML = `
@@ -219,7 +221,9 @@ function loadCurrentMonthData() {
     billData.forEach((record, index) => {
         const input = document.getElementById(`bill_${index}`);
         if (input) {
-            const amount = record[selectedMonth] ? convertMyanmarToEnglishNumbers(record[selectedMonth]) : '';
+            // ★★★ FIXED HERE ★★★ Remove commas before displaying in input
+            const numStr = record[selectedMonth] || '';
+            const amount = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
             input.value = amount;
         }
     });
@@ -291,9 +295,17 @@ function applyFiltersAndRender() {
         let displayMonth = monthFilter;
         if (monthFilter === 'all') {
             displayMonth = 'လအားလုံး (စုစုပေါင်း)';
-            displayAmount = MONTH_HEADERS.reduce((sum, month) => sum + (parseInt(convertMyanmarToEnglishNumbers(record[month] || '0'), 10) || 0), 0);
+            // ★★★ FIXED HERE ★★★ Remove commas before parsing for correct calculation
+            displayAmount = MONTH_HEADERS.reduce((sum, month) => {
+                const numStr = (record[month] || '0').toString();
+                const cleanedStr = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
+                return sum + (parseInt(cleanedStr, 10) || 0);
+            }, 0);
         } else {
-            displayAmount = parseInt(convertMyanmarToEnglishNumbers(record[monthFilter] || '0'), 10) || 0;
+            // ★★★ FIXED HERE ★★★ Remove commas before parsing for correct calculation
+            const numStr = (record[monthFilter] || '0').toString();
+            const cleanedStr = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
+            displayAmount = parseInt(cleanedStr, 10) || 0;
         }
         return { ...record, displayMonth, displayAmount };
     });
@@ -309,8 +321,18 @@ function displaySummary(data) {
     const summaryContainer = document.getElementById('summary-info');
     if (!summaryContainer) return;
     const latestMonth = getLatestMonthWithData(data);
-    const latestMonthTotal = latestMonth ? data.reduce((sum, r) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[latestMonth] || '0'), 10) || 0), 0) : 0;
-    const yearTotal = data.reduce((total, r) => total + MONTH_HEADERS.reduce((sum, m) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[m] || '0'), 10) || 0), 0), 0);
+    // ★★★ FIXED HERE ★★★ Remove commas before parsing for correct calculation
+    const latestMonthTotal = latestMonth ? data.reduce((sum, r) => {
+        const numStr = (r[latestMonth] || '0').toString();
+        const cleanedStr = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
+        return sum + (parseInt(cleanedStr, 10) || 0);
+    }, 0) : 0;
+    // ★★★ FIXED HERE ★★★ Remove commas before parsing for correct calculation
+    const yearTotal = data.reduce((total, r) => total + MONTH_HEADERS.reduce((sum, m) => {
+        const numStr = (r[m] || '0').toString();
+        const cleanedStr = convertMyanmarToEnglishNumbers(numStr).replace(/,/g, '');
+        return sum + (parseInt(cleanedStr, 10) || 0);
+    }, 0), 0);
     summaryContainer.innerHTML = `
         <div class="summary-item">နောက်ဆုံးလ (${latestMonth || 'N/A'}) စုစုပေါင်း = <strong>${convertEnglishToMyanmarNumbers(formatNumber(latestMonthTotal))} ကျပ်</strong></div>
         <div class="summary-item">ယခုနှစ် စုစုပေါင်း = <strong>${convertEnglishToMyanmarNumbers(formatNumber(yearTotal))} ကျပ်</strong></div>
