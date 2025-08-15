@@ -2,6 +2,22 @@
 let billData = [];
 const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 
+// NEW: Function to convert Myanmar numbers to English numbers
+function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
+    if (typeof myanmarNumberStr !== 'string') {
+        return myanmarNumberStr; // Return as is if not a string
+    }
+    const myanmarNumbers = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
+    const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    
+    let result = myanmarNumberStr;
+    for (let i = 0; i < 10; i++) {
+        // Use a regular expression with the 'g' flag to replace all occurrences
+        result = result.replace(new RegExp(myanmarNumbers[i], "g"), englishNumbers[i]);
+    }
+    return result;
+}
+
 // Function to parse CSV text into an array of objects
 function parseCSV(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
@@ -15,7 +31,7 @@ function parseCSV(text) {
         });
         return obj;
     });
-    return data.filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း')); // Filter out the total row
+    return data.filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း'));
 }
 
 // Function to find the last paid month and its amount
@@ -33,7 +49,6 @@ function findLastPaidDetails(record) {
 function displaySummary(data) {
     const summaryContainer = document.getElementById('summary-info');
     
-    // 1. Find the latest month with any data
     let latestMonth = '';
     for (let i = MONTH_HEADERS.length - 1; i >= 0; i--) {
         const month = MONTH_HEADERS[i];
@@ -43,25 +58,25 @@ function displaySummary(data) {
         }
     }
 
-    // 2. Calculate total for the latest month
     let latestMonthTotal = 0;
     if (latestMonth) {
         latestMonthTotal = data.reduce((sum, record) => {
-            const amount = parseInt(record[latestMonth], 10) || 0;
+            // UPDATED: Convert numbers before parsing
+            const englishAmount = convertMyanmarToEnglishNumbers(record[latestMonth]);
+            const amount = parseInt(englishAmount, 10) || 0;
             return sum + amount;
         }, 0);
     }
 
-    // 3. Calculate total for the year from the 'စုပေါင်း' column
     const yearTotal = data.reduce((sum, record) => {
-        const amount = parseInt(record['စုပေါင်း'], 10) || 0;
+        // UPDATED: Convert numbers before parsing
+        const englishAmount = convertMyanmarToEnglishNumbers(record['စုပေါင်း']);
+        const amount = parseInt(englishAmount, 10) || 0;
         return sum + amount;
     }, 0);
 
-    // Format numbers with commas
     const formatNumber = (num) => num.toLocaleString('en-US');
 
-    // 4. Display the summary
     summaryContainer.innerHTML = `
         <div class="summary-item">
             ယခုလ (${latestMonth || 'N/A'}) မီတာဘေလ် = <strong>${formatNumber(latestMonthTotal)} ကျပ်</strong>
@@ -97,12 +112,16 @@ function displayTable(data) {
         const lastPaid = findLastPaidDetails(record);
         const row = tbody.insertRow();
         
+        // UPDATED: Convert number before displaying
+        const englishAmount = convertMyanmarToEnglishNumbers(lastPaid.amount);
+        const formattedAmount = (parseInt(englishAmount, 10) || 0).toLocaleString('en-US');
+
         row.insertCell().textContent = record['စဉ်'] || '-';
         row.insertCell().textContent = record['ကျောင်း'] || '-';
         row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
         row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
         row.insertCell().textContent = lastPaid.month;
-        row.insertCell().textContent = (parseInt(lastPaid.amount, 10) || 0).toLocaleString('en-US');
+        row.insertCell().textContent = formattedAmount;
     });
 
     resultsContainer.appendChild(table);
@@ -130,8 +149,8 @@ window.onload = async () => {
         const csvText = await response.text();
         billData = parseCSV(csvText);
         
-        displaySummary(billData); // Display the summary first
-        displayTable(billData);   // Then display the full table
+        displaySummary(billData);
+        displayTable(billData);
         
     } catch (error) {
         console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
