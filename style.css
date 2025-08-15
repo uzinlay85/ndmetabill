@@ -14,16 +14,26 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }
 .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     text-align: center;
     margin-bottom: 25px;
     border-bottom: 2px solid #007bff;
     padding-bottom: 15px;
+}
+.header-text {
+    flex-grow: 1;
 }
 .header h1 {
     margin: 5px 0;
     font-size: 22px;
     color: #0056b3;
     font-weight: bold;
+}
+.header-logo {
+    width: 80px;
+    height: auto;
 }
 .top-controls {
     display: flex;
@@ -278,4 +288,3 @@ body {
     #bill-table th, #bill-table td { padding: 8px; font-size: 10pt; }
     .admin-panel, .modal { display: none !important; }
 }
-
