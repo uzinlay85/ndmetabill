@@ -19,6 +19,14 @@ function formatNumber(num) {
     return (parseInt(num, 10) || 0).toLocaleString('en-US');
 }
 
+function getLatestMonthWithData(data) {
+    for (let i = MONTH_HEADERS.length - 1; i >= 0; i--) {
+        const month = MONTH_HEADERS[i];
+        if (data.some(rec => rec[month] && rec[month].trim() !== '')) return month;
+    }
+    return null;
+}
+
 // --- CORE LOGIC ---
 function parseCSV(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
@@ -34,15 +42,6 @@ function parseCSV(text) {
     return data.filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း'));
 }
 
-function sortDataByDefault(data) {
-    // Default sort is now by 'စဉ်' (sequence number)
-    return data.sort((a, b) => {
-        const seqA = parseInt(convertMyanmarToEnglishNumbers(a['စဉ်'] || '0'), 10);
-        const seqB = parseInt(convertMyanmarToEnglishNumbers(b['စဉ်'] || '0'), 10);
-        return seqA - seqB;
-    });
-}
-
 function applyFiltersAndRender() {
     const schoolFilterValue = document.getElementById('filter-dropdown-ကျောင်း').value;
     const monthFilterValue = document.getElementById('filter-dropdown-လ').value;
@@ -54,28 +53,34 @@ function applyFiltersAndRender() {
     }
 
     // 2. Prepare data for rendering based on month filter
-    const tableData = filteredData.map(record => {
+    let tableData = filteredData.map(record => {
         let displayMonth = '';
         let displayAmount = 0;
 
         if (monthFilterValue === 'all') {
-            // Calculate total for the year
             displayMonth = 'လအားလုံး (စုစုပေါင်း)';
             displayAmount = MONTH_HEADERS.reduce((sum, month) => {
                 return sum + (parseInt(convertMyanmarToEnglishNumbers(record[month] || '0'), 10) || 0);
             }, 0);
         } else {
-            // Get data for the selected month
             displayMonth = monthFilterValue;
             displayAmount = parseInt(convertMyanmarToEnglishNumbers(record[monthFilterValue] || '0'), 10) || 0;
         }
 
-        return {
-            ...record,
-            displayMonth: displayMonth,
-            displayAmount: displayAmount
-        };
+        return { ...record, displayMonth, displayAmount };
     });
+
+    // 3. Sort the data if a specific month is selected
+    if (monthFilterValue !== 'all') {
+        tableData.sort((a, b) => b.displayAmount - a.displayAmount);
+    } else {
+        // Optional: if "All Months" is selected, sort by school name or sequence
+        tableData.sort((a, b) => {
+            const seqA = parseInt(convertMyanmarToEnglishNumbers(a['စဉ်'] || '0'), 10);
+            const seqB = parseInt(convertMyanmarToEnglishNumbers(b['စဉ်'] || '0'), 10);
+            return seqA - seqB;
+        });
+    }
 
     renderTable(tableData);
 }
@@ -83,7 +88,7 @@ function applyFiltersAndRender() {
 // --- DISPLAY & RENDERING FUNCTIONS ---
 function displaySummary(data) {
     const summaryContainer = document.getElementById('summary-info');
-    const latestMonthWithData = MONTH_HEADERS.slice().reverse().find(month => data.some(rec => rec[month] && rec[month].trim() !== ''));
+    const latestMonthWithData = getLatestMonthWithData(data);
     
     let latestMonthTotal = 0;
     if (latestMonthWithData) {
@@ -115,7 +120,7 @@ function renderTable(dataToRender) {
     });
 }
 
-function setupFiltersAndTable(data) {
+function setupFiltersAndTable(data, latestMonth) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
     const table = document.createElement('table');
@@ -128,14 +133,11 @@ function setupFiltersAndTable(data) {
         headerRow.appendChild(th);
     });
 
-    // --- Create Filter Row ---
     const filterRow = thead.insertRow();
     filterRow.className = 'filter-row';
     
-    // Create empty cells for non-filter columns
     filterRow.insertCell(); // စဉ်
     
-    // School Filter
     const schoolTd = filterRow.insertCell();
     const schoolFilter = document.createElement('select');
     schoolFilter.className = 'filter-input';
@@ -150,7 +152,6 @@ function setupFiltersAndTable(data) {
     filterRow.insertCell(); // စာရင်းအမှတ်
     filterRow.insertCell(); // မီတာအမှတ်
 
-    // Month Filter
     const monthTd = filterRow.insertCell();
     const monthFilter = document.createElement('select');
     monthFilter.className = 'filter-input';
@@ -159,6 +160,10 @@ function setupFiltersAndTable(data) {
     MONTH_HEADERS.forEach(month => {
         monthFilter.innerHTML += `<option value="${month}">${month}</option>`;
     });
+    // Set default selected month
+    if (latestMonth) {
+        monthFilter.value = latestMonth;
+    }
     monthFilter.onchange = applyFiltersAndRender;
     monthTd.appendChild(monthFilter);
 
@@ -177,12 +182,13 @@ window.onload = async () => {
     try {
         const response = await fetch('data.csv');
         const csvText = await response.text();
-        const parsedData = parseCSV(csvText);
-        billData = sortDataByDefault(parsedData);
+        billData = parseCSV(csvText); // Keep original data unsorted
+        
+        const latestMonth = getLatestMonthWithData(billData);
         
         displaySummary(billData);
-        setupFiltersAndTable(billData);
-        applyFiltersAndRender(); // Initial render
+        setupFiltersAndTable(billData, latestMonth); // Pass latest month to set default
+        applyFiltersAndRender(); // Initial render will now use the default filter values
         
     } catch (error) {
         console.error("CSV ဖိုင်ကို ဖတ်မရပါ:", error);
