@@ -13,6 +13,31 @@ const mainContent = document.getElementById('mainContent');
 const adminPanel = document.getElementById('adminPanel');
 
 // --- UTILITY FUNCTIONS ---
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    // Set class based on type (info, success, error)
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // Trigger the animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    // Automatically hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        // Remove the element from DOM after transition ends
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 500);
+    }, 3000);
+}
+
+
 function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
     if (typeof myanmarNumberStr !== 'string' || !myanmarNumberStr) return myanmarNumberStr;
     const myanmarNumbers = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
@@ -51,7 +76,7 @@ function getLatestMonthWithData(data) {
 
 // --- CSV FUNCTIONS ---
 function parseCSV(text) {
-    const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+    const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== ''); // More robust line splitting
     if (lines.length < 2) return [];
     const headers = lines[0].split(',').map(h => h.trim());
     return lines.slice(1).map(line => {
@@ -68,7 +93,7 @@ function generateCSV(data) {
     const allHeaders = ['စဉ်', 'အမည်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရည်ညွှန်း', ...MONTH_HEADERS];
     let csvContent = allHeaders.join(',') + '\n';
     data.forEach(record => {
-        const row = allHeaders.map(header => record[header] || '').join(',');
+        const row = allHeaders.map(header => `"${(record[header] || '').replace(/"/g, '""')}"`).join(','); // Handle commas in data
         csvContent += row + '\n';
     });
     return csvContent;
@@ -144,7 +169,7 @@ function handleEditFormSubmit(e) {
     });
 
     if (hasChanges) {
-        alert('အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။');
+        showNotification('အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။', 'success');
         displaySummary(billData);
         applyFiltersAndRender();
     }
@@ -173,7 +198,7 @@ function generateBillEntryForm() {
 function loadCurrentMonthData() {
     const selectedMonth = document.getElementById('entryMonth').value;
     if (!selectedMonth) {
-        alert('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။');
+        showNotification('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။', 'error');
         return;
     }
     billData.forEach((record, index) => {
@@ -189,7 +214,7 @@ function saveBillData(e) {
     e.preventDefault();
     const selectedMonth = document.getElementById('entryMonth').value;
     if (!selectedMonth) {
-        alert('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။');
+        showNotification('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။', 'error');
         return;
     }
     let hasChanges = false;
@@ -205,11 +230,11 @@ function saveBillData(e) {
         }
     });
     if (hasChanges) {
-        alert(`${selectedMonth} အတွက် ဒေတာများကို သိမ်းပြီးပါပြီ။`);
+        showNotification(`${selectedMonth} အတွက် ဒေတာများကို သိမ်းပြီးပါပြီ။`, 'success');
         displaySummary(billData);
         applyFiltersAndRender();
     } else {
-        alert('ပြောင်းလဲမှုများ မရှိပါ။');
+        showNotification('ပြောင်းလဲမှုများ မရှိပါ။');
     }
 }
 
@@ -235,7 +260,7 @@ function handleAdminLogin(e) {
         document.getElementById('adminPassword').value = '';
         showAdminPanel();
     } else {
-        alert('မှားယွင်းသော password ဖြစ်ပါသည်။');
+        showNotification('မှားယွင်းသော password ဖြစ်ပါသည်။', 'error');
     }
 }
 
@@ -284,9 +309,11 @@ function renderTable(dataToRender) {
     const tbody = document.querySelector('#bill-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    dataToRender.forEach((record, index) => {
+    dataToRender.forEach(record => {
         const row = tbody.insertRow();
-        row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
+        // ★★★ FIXED HERE ★★★
+        // Use the original sequence number from the data, not the loop index.
+        row.insertCell().textContent = record['စဉ်'] || '-'; 
         row.insertCell().textContent = record['ကျောင်း'] || '-';
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['စာရင်းအမှတ်']) || '-';
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['မီတာအမှတ်']) || '-';
