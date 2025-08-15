@@ -51,4 +51,66 @@
         <div class="data-entry-section">
             <h3>လစဉ်မီတာဘေလ် ထည့်သွင်းခြင်း</h3>
             <form id="dataEntryForm">
-             
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="entryMonth">လ:</label>
+                        <select id="entryMonth" required>
+                            <option value="">လရွေးချယ်ပါ</option>
+                            <option value="၁-လပိုင်း">၁-လပိုင်း</option>
+                            <option value="၂-လပိုင်း">၂-လပိုင်း</option>
+                            <option value="၃-လပိုင်း">၃-လပိုင်း</option>
+                            <option value="၄-လပိုင်း">၄-လပိုင်း</option>
+                            <option value="၅-လပိုင်း">၅-လပိုင်း</option>
+                            <option value="၆-လပိုင်း">၆-လပိုင်း</option>
+                            <option value="၇-လပိုင်း">၇-လပိုင်း</option>
+                            <option value="၈-လပိုင်း">၈-လပိုင်း</option>
+                            <option value="၉-လပိုင်း">၉-လပိုင်း</option>
+                            <option value="၁၀-လပိုင်း">၁၀-လပိုင်း</option>
+                            <option value="၁၁-လပိုင်း">၁၁-လပိုင်း</option>
+                            <option value="၁၂-လပိုင်း">၁၂-လပိုင်း</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="billEntryContainer"></div>
+                <div class="form-actions">
+                    <button type="button" id="loadDataBtn" class="load-btn">လက်ရှိဒေတာများ ထည့်သွင်းပါ</button>
+                    <button type="submit" class="save-btn">သိမ်းမည်</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="data-management-section">
+            <h3>ကျောင်းအလိုက် ဒေတာများ ပြင်ဆင်/ဖျက်ခြင်း</h3>
+            <div id="recordListContainer">
+                <!-- List of records will be generated here -->
+            </div>
+        </div>
+
+        <div class="admin-footer">
+             <button type="button" id="downloadCsvBtn" class="download-btn">CSV ဖိုင်ဒေါင်းလုဒ်လုပ်မည်</button>
+        </div>
+    </div>
+
+    <!-- Main Website Content -->
+    <div id="mainContent" class="container">
+        <div class="header">
+            <img src="logo.png" alt="Logo" class="header-logo">
+            <div class="header-text">
+                <h1>ရန်ကုန်တိုင်းဒေသကြီး - ဗဟန်းမြို့နယ်</h1>
+                <h1>ပါဠိတက္ကသိုလ်ညောင်တုန်းကျောင်းတိုက်</h1>
+                <h1>လျှပ်စစ်မီတာဘေလ်စာရင်း</h1>
+            </div>
+            <img src="logo.png" alt="Logo" class="header-logo">
+        </div>
+        <div class="top-controls">
+            <button id="adminBtn" class="admin-btn">Admin Panel</button>
+            <button onclick="exportToPdf( )" class="pdf-button">PDF အဖြစ် သိမ်းမည်</button>
+        </div>
+        <div id="summary-info" class="summary-container"></div>
+        <div id="results">
+            <p>ဒေတာများကို တင်နေပါသည်...</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
