@@ -15,15 +15,16 @@ body {
 }
 .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* Changed from space-between to center */
     align-items: center;
     text-align: center;
     margin-bottom: 25px;
     border-bottom: 2px solid #007bff;
     padding-bottom: 15px;
+    gap: 50px; /* Added gap between logos and text */
 }
 .header-text {
-    flex-grow: 1;
+    flex-grow: 0; /* Changed from 1 to 0 */
 }
 .header h1 {
     margin: 5px 0;
