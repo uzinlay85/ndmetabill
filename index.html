@@ -3,33 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ကျောင်းတိုက် မီတာဘေလ် စစ်ဆေးရန်</title>
+    <title>မီတာဘေလ်စာရင်း</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Pyidaungsu Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <div class="header-title">
-            <div class="title-line-1">ရန်ကုန်တိုင်းဒေသကြီး - ဗဟန်းမြို့နယ်</div>
-            <div class="title-line-2">ပါဠိတက္ကသိုလ်ညောင်တုန်းကျောင်းတိုက်</div>
-            <div class="title-line-3">လျှပ်စစ်မီတာဘေလ်စာရင်း</div>
-        </div>
-        <div class="controls">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="ကျောင်းအမည်၊ စာရင်းအမှတ်၊ သို့မဟုတ် မီတာအမှတ်ဖြင့် ရှာပါ...">
-                <button onclick="searchBill()">ရှာဖွေရန်</button>
-            </div>
-            <button id="exportPdfButton" onclick="exportToPdf()">PDF အဖြစ် သိမ်းမည်</button>
+        <div class="header">
+            <!-- Headers will be on separate lines -->
+            <h1>ရန်ကုန်တိုင်းဒေသကြီး - ဗဟန်းမြို့နယ်</h1>
+            <h1>ပါဠိတက္ကသိုလ်ညောင်တုန်းကျောင်းတိုက်</h1>
+            <h1>လျှပ်စစ်မီတာဘေလ်စာရင်း</h1>
         </div>
 
-        <!-- New Summary Info Box -->
-        <div id="summary-info" class="summary-info">
-            <!-- Summary data will be injected here by JavaScript -->
+        <!-- The main search bar is removed. PDF button is moved to a new container. -->
+        <div class="top-controls">
+            <button onclick="exportToPdf( )" class="pdf-button">PDF အဖြစ် သိမ်းမည်</button>
+        </div>
+
+        <div id="summary-info" class="summary-container">
+            <!-- Summary info will be loaded by JavaScript -->
         </div>
 
         <div id="results">
-            <!-- ရှာဖွေမှုရလဒ်များကို ဤနေရာတွင် ပြသပါမည် -->
+            <!-- Table will be loaded by JavaScript -->
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
