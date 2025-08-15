@@ -25,7 +25,9 @@ function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
 }
 
 function convertEnglishToMyanmarNumbers(englishNumberStr) {
-    if (typeof englishNumberStr !== 'string' && typeof englishNumberStr !== 'number') return englishNumberStr;
+    if ((typeof englishNumberStr !== 'string' && typeof englishNumberStr !== 'number') || !englishNumberStr) {
+        return englishNumberStr;
+    }
     const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     const myanmarNumbers = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
     let result = String(englishNumberStr);
@@ -259,7 +261,6 @@ function applyFiltersAndRender() {
         if (monthFilter !== 'all') {
             return b.displayAmount - a.displayAmount;
         }
-        // *** CRITICAL FIX HERE ***
         const seqA = parseInt(convertMyanmarToEnglishNumbers(a['စဉ်']), 10);
         const seqB = parseInt(convertMyanmarToEnglishNumbers(b['စဉ်']), 10);
         return seqA - seqB;
@@ -269,6 +270,7 @@ function applyFiltersAndRender() {
 
 function displaySummary(data) {
     const summaryContainer = document.getElementById('summary-info');
+    if (!summaryContainer) return;
     const latestMonth = getLatestMonthWithData(data);
     const latestMonthTotal = latestMonth ? data.reduce((sum, r) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[latestMonth] || '0'), 10) || 0), 0) : 0;
     const yearTotal = data.reduce((total, r) => total + MONTH_HEADERS.reduce((sum, m) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[m] || '0'), 10) || 0), 0), 0);
@@ -297,4 +299,93 @@ function setupFiltersAndTable(data, latestMonth) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
     const table = document.createElement('table');
+    table.id = 'bill-table';
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    DISPLAY_HEADERS.forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+
+    const filterRow = thead.insertRow();
+    filterRow.className = 'filter-row';
+    filterRow.insertCell();
     
+    const schoolTd = filterRow.insertCell();
+    const schoolFilter = document.createElement('select');
+    schoolFilter.className = 'filter-input';
+    schoolFilter.id = 'filter-dropdown-ကျောင်း';
+    schoolFilter.innerHTML = `<option value="">ကျောင်းအားလုံး</option>`;
+    [...new Set(data.map(r => r['ကျောင်း']))].sort().forEach(school => {
+        schoolFilter.innerHTML += `<option value="${school}">${school}</option>`;
+    });
+    schoolFilter.onchange = applyFiltersAndRender;
+    schoolTd.appendChild(schoolFilter);
+
+    filterRow.insertCell();
+    filterRow.insertCell();
+
+    const monthTd = filterRow.insertCell();
+    const monthFilter = document.createElement('select');
+    monthFilter.className = 'filter-input';
+    monthFilter.id = 'filter-dropdown-လ';
+    monthFilter.innerHTML = `<option value="all">လအားလုံး</option>`;
+    MONTH_HEADERS.forEach(month => {
+        monthFilter.innerHTML += `<option value="${month}">${month}</option>`;
+    });
+    if (latestMonth) monthFilter.value = latestMonth;
+    monthFilter.onchange = applyFiltersAndRender;
+    monthTd.appendChild(monthFilter);
+
+    filterRow.insertCell();
+    table.createTBody();
+    resultsContainer.appendChild(table);
+}
+
+function exportToPdf() {
+    window.print();
+}
+
+// --- INITIALIZATION & EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('data.csv');
+        if (!response.ok) {
+            throw new Error(`'data.csv' ဖိုင်ကို ရှာမတွေ့ပါ သို့မဟုတ် folder တစ်ခုတည်းတွင် မရှိပါ။`);
+        }
+        const csvText = await response.text();
+        billData = parseCSV(csvText);
+        if (billData.length === 0) {
+            throw new Error("'data.csv' ဖိုင်ထဲတွင် အချက်အလက်မရှိပါ သို့မဟုတ် format မှားယွင်းနေပါသည်။");
+        }
+        
+        const latestMonth = getLatestMonthWithData(billData);
+        setupFiltersAndTable(billData, latestMonth);
+        displaySummary(billData);
+        applyFiltersAndRender();
+        
+    } catch (error) {
+        console.error("Error loading or parsing data:", error);
+        document.getElementById('results').innerHTML = `<p style="color: red; font-weight: bold;">Error: ${error.message}</p>`;
+    }
+
+    // Modal close buttons
+    document.getElementById('closeLoginModal').addEventListener('click', () => adminLoginModal.style.display = 'none');
+    document.getElementById('closeEditModal').addEventListener('click', () => editDataModal.style.display = 'none');
+    window.addEventListener('click', (event) => {
+        if (event.target === adminLoginModal) adminLoginModal.style.display = 'none';
+        if (event.target === editDataModal) editDataModal.style.display = 'none';
+    });
+
+    // Admin functionality
+    document.getElementById('adminBtn').addEventListener('click', () => adminLoginModal.style.display = 'block');
+    document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+    document.getElementById('logoutBtn').addEventListener('click', hideAdminPanel);
+    
+    // Data entry and management forms
+    document.getElementById('dataEntryForm').addEventListener('submit', saveBillData);
+    document.getElementById('loadDataBtn').addEventListener('click', loadCurrentMonthData);
+    document.getElementById('editDataForm').addEventListener('submit', handleEditFormSubmit);
+    document.getElementById('downloadCsvBtn').addEventListener('click', downloadCSV);
+});
