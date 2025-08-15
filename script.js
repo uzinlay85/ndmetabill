@@ -281,15 +281,13 @@ function applyFiltersAndRender() {
         }
         return { ...record, displayMonth, displayAmount };
     });
-
+    
+    // ★★★ UPDATED BASED ON YOUR REQUEST ★★★
+    // Always sort by the calculated displayAmount (either monthly or total) in descending order.
     tableData.sort((a, b) => {
-        if (monthFilter !== 'all') {
-            return b.displayAmount - a.displayAmount;
-        }
-        const seqA = parseInt(convertMyanmarToEnglishNumbers(a['စဉ်']), 10);
-        const seqB = parseInt(convertMyanmarToEnglishNumbers(b['စဉ်']), 10);
-        return seqA - seqB;
+        return b.displayAmount - a.displayAmount;
     });
+
     renderTable(tableData);
 }
 
@@ -311,7 +309,6 @@ function renderTable(dataToRender) {
     tbody.innerHTML = '';
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
-        // ★★★ UPDATED BASED ON YOUR REQUEST ★★★
         // 1. Display sequence based on current sort order (1, 2, 3...)
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
         row.insertCell().textContent = record['ကျောင်း'] || '-';
