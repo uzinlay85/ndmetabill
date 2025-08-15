@@ -9,9 +9,12 @@
 <body>
     <div class="container">
         <h1>ကျောင်းတိုက် မီတာဘေလ် ရှာဖွေရန်</h1>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="ကျောင်းအမည်၊ စာရင်းအမှတ်၊ သို့မဟုတ် မီတာအမှတ်ဖြင့် ရှာပါ...">
-            <button onclick="searchBill()">ရှာဖွေရန်</button>
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ကျောင်းအမည်၊ စာရင်းအမှတ်၊ သို့မဟုတ် မီတာအမှတ်ဖြင့် ရှာပါ...">
+                <button onclick="searchBill()">ရှာဖွေရန်</button>
+            </div>
+            <button id="exportPdfButton" onclick="exportToPdf()">PDF အဖြစ် သိမ်းမည်</button>
         </div>
         <div id="results">
             <!-- ရှာဖွေမှုရလဒ်များကို ဤနေရာတွင် ပြသပါမည် -->
