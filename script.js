@@ -2,6 +2,7 @@
 let billData = [];
 let isAdminLoggedIn = false;
 let currentlyEditingIndex = null;
+let hasUnsavedChanges = false; // To track if data has been modified
 const ADMIN_PASSWORD = "Ashin@135";
 const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 const DISPLAY_HEADERS = ['စဉ်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရွေးချယ်ထားသောလ', 'ဘေလ်ပမာဏ'];
@@ -15,28 +16,38 @@ const adminPanel = document.getElementById('adminPanel');
 // --- UTILITY FUNCTIONS ---
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
-    // Set class based on type (info, success, error)
     notification.className = `notification ${type}`;
     notification.textContent = message;
     document.body.appendChild(notification);
 
-    // Trigger the animation
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
 
-    // Automatically hide after 3 seconds
     setTimeout(() => {
         notification.classList.remove('show');
-        // Remove the element from DOM after transition ends
         setTimeout(() => {
             if (document.body.contains(notification)) {
                 document.body.removeChild(notification);
             }
         }, 500);
-    }, 3000);
+    }, 4000); // Increased duration for important messages
 }
 
+function markAsDirty() {
+    if (hasUnsavedChanges) return; // No need to run again if already dirty
+    hasUnsavedChanges = true;
+    const downloadBtn = document.getElementById('downloadCsvBtn');
+    downloadBtn.classList.add('unsaved-changes');
+    downloadBtn.textContent = 'အပြောင်းအလဲများ သိမ်းဆည်းရန် နှိပ်ပါ';
+}
+
+function markAsClean() {
+    hasUnsavedChanges = false;
+    const downloadBtn = document.getElementById('downloadCsvBtn');
+    downloadBtn.classList.remove('unsaved-changes');
+    downloadBtn.textContent = 'CSV ဖိုင်ဒေါင်းလုဒ်လုပ်မည်';
+}
 
 function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
     if (typeof myanmarNumberStr !== 'string' || !myanmarNumberStr) return myanmarNumberStr;
@@ -76,7 +87,7 @@ function getLatestMonthWithData(data) {
 
 // --- CSV FUNCTIONS ---
 function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== ''); // More robust line splitting
+    const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length < 2) return [];
     const headers = lines[0].split(',').map(h => h.trim());
     return lines.slice(1).map(line => {
@@ -93,7 +104,7 @@ function generateCSV(data) {
     const allHeaders = ['စဉ်', 'အမည်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရည်ညွှန်း', ...MONTH_HEADERS];
     let csvContent = allHeaders.join(',') + '\n';
     data.forEach(record => {
-        const row = allHeaders.map(header => `"${(record[header] || '').replace(/"/g, '""')}"`).join(','); // Handle commas in data
+        const row = allHeaders.map(header => `"${(record[header] || '').replace(/"/g, '""')}"`).join(',');
         csvContent += row + '\n';
     });
     return csvContent;
@@ -108,6 +119,9 @@ function downloadCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    showNotification('CSV ကို ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ။ အပြောင်းအလဲများ कायमဖြစ်ရန် ဤဖိုင်ကို server ပေါ်တွင် အစားထိုးတင်ပေးပါ။', 'info');
+    markAsClean(); // Reset the unsaved changes state after downloading
 }
 
 // --- ADMIN PANEL: NEW DATA MANAGEMENT FUNCTIONS ---
@@ -170,6 +184,7 @@ function handleEditFormSubmit(e) {
 
     if (hasChanges) {
         showNotification('အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။', 'success');
+        markAsDirty(); // Mark that there are unsaved changes
         displaySummary(billData);
         applyFiltersAndRender();
     }
@@ -231,6 +246,7 @@ function saveBillData(e) {
     });
     if (hasChanges) {
         showNotification(`${selectedMonth} အတွက် ဒေတာများကို သိမ်းပြီးပါပြီ။`, 'success');
+        markAsDirty(); // Mark that there are unsaved changes
         displaySummary(billData);
         applyFiltersAndRender();
     } else {
@@ -282,8 +298,6 @@ function applyFiltersAndRender() {
         return { ...record, displayMonth, displayAmount };
     });
     
-    // ★★★ UPDATED BASED ON YOUR REQUEST ★★★
-    // Always sort by the calculated displayAmount (either monthly or total) in descending order.
     tableData.sort((a, b) => {
         return b.displayAmount - a.displayAmount;
     });
@@ -309,10 +323,8 @@ function renderTable(dataToRender) {
     tbody.innerHTML = '';
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
-        // 1. Display sequence based on current sort order (1, 2, 3...)
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
         row.insertCell().textContent = record['ကျောင်း'] || '-';
-        // 2. Display account and meter numbers in English numbers
         row.insertCell().textContent = convertMyanmarToEnglishNumbers(record['စာရင်းအမှတ်']) || '-';
         row.insertCell().textContent = convertMyanmarToEnglishNumbers(record['မီတာအမှတ်']) || '-';
         row.insertCell().textContent = record.displayMonth;
@@ -413,4 +425,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('loadDataBtn').addEventListener('click', loadCurrentMonthData);
     document.getElementById('editDataForm').addEventListener('submit', handleEditFormSubmit);
     document.getElementById('downloadCsvBtn').addEventListener('click', downloadCSV);
+
+    // Warn user before leaving with unsaved changes
+    window.addEventListener('beforeunload', (event) => {
+        if (hasUnsavedChanges) {
+            event.preventDefault();
+            event.returnValue = ''; // Required for most browsers
+        }
+    });
 });
