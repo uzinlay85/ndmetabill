@@ -1,9 +1,16 @@
 // --- GLOBAL VARIABLES ---
 let billData = [];
 let isAdminLoggedIn = false;
-const ADMIN_PASSWORD = "Ashin@135"; // Password changed as requested
+let currentlyEditingIndex = null;
+const ADMIN_PASSWORD = "Ashin@135";
 const MONTH_HEADERS = ['၁-လပိုင်း', '၂-လပိုင်း', '၃-လပိုင်း', '၄-လပိုင်း', '၅-လပိုင်း', '၆-လပိုင်း', '၇-လပိုင်း', '၈-လပိုင်း', '၉-လပိုင်း', '၁၀-လပိုင်း', '၁၁-လပိုင်း', '၁၂-လပိုင်း'];
 const DISPLAY_HEADERS = ['စဉ်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရွေးချယ်ထားသောလ', 'ဘေလ်ပမာဏ'];
+
+// --- DOM ELEMENTS ---
+const adminLoginModal = document.getElementById('adminLoginModal');
+const editDataModal = document.getElementById('editDataModal');
+const mainContent = document.getElementById('mainContent');
+const adminPanel = document.getElementById('adminPanel');
 
 // --- UTILITY FUNCTIONS ---
 function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
@@ -18,10 +25,10 @@ function convertMyanmarToEnglishNumbers(myanmarNumberStr) {
 }
 
 function convertEnglishToMyanmarNumbers(englishNumberStr) {
-    if (typeof englishNumberStr !== 'string') return englishNumberStr;
+    if (typeof englishNumberStr !== 'string' || !englishNumberStr) return englishNumberStr;
     const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     const myanmarNumbers = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
-    let result = englishNumberStr;
+    let result = String(englishNumberStr);
     for (let i = 0; i < 10; i++) {
         result = result.replace(new RegExp(englishNumbers[i], "g"), myanmarNumbers[i]);
     }
@@ -35,7 +42,7 @@ function formatNumber(num) {
 function getLatestMonthWithData(data) {
     for (let i = MONTH_HEADERS.length - 1; i >= 0; i--) {
         const month = MONTH_HEADERS[i];
-        if (data.some(rec => rec[month] && rec[month].trim() !== '')) return month;
+        if (data.some(rec => rec[month] && String(rec[month]).trim() !== '')) return month;
     }
     return null;
 }
@@ -44,79 +51,116 @@ function getLatestMonthWithData(data) {
 function parseCSV(text) {
     const lines = text.trim().split('\n').filter(line => line.trim() !== '');
     if (lines.length < 2) return [];
-
     const headers = lines[0].split(',').map(h => h.trim());
-    const data = lines.slice(1).map(line => {
+    return lines.slice(1).map(line => {
         const values = line.split(',');
         let obj = {};
         headers.forEach((header, i) => {
             obj[header] = values[i] ? values[i].trim() : '';
         });
         return obj;
-    });
-    return data.filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း'));
+    }).filter(record => record['စဉ်'] && !record['စဉ်'].includes('စုစုပေါင်း'));
 }
 
 function generateCSV(data) {
-    const headers = ['စဉ်', 'အမည်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရည်ညွှန်း', ...MONTH_HEADERS, 'စုပေါင်း'];
-    let csvContent = headers.join(',') + '\n';
-    
+    const allHeaders = ['စဉ်', 'အမည်', 'ကျောင်း', 'စာရင်းအမှတ်', 'မီတာအမှတ်', 'ရည်ညွှန်း', ...MONTH_HEADERS];
+    let csvContent = allHeaders.join(',') + '\n';
     data.forEach(record => {
-        const row = headers.map(header => record[header] || '').join(',');
+        const row = allHeaders.map(header => record[header] || '').join(',');
         csvContent += row + '\n';
     });
-    
     return csvContent;
 }
 
-function downloadCSV(data) {
-    const csvContent = generateCSV(data);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+function downloadCSV() {
+    const csvContent = generateCSV(billData);
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'meter_bill_data.csv');
-    link.style.visibility = 'hidden';
+    link.href = URL.createObjectURL(blob);
+    link.download = 'meter_bill_data.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
 
-// --- ADMIN FUNCTIONS ---
-function showAdminModal() {
-    document.getElementById('adminModal').style.display = 'block';
+// --- ADMIN PANEL: NEW DATA MANAGEMENT FUNCTIONS ---
+function populateRecordList() {
+    const container = document.getElementById('recordListContainer');
+    container.innerHTML = '';
+    billData.forEach((record, index) => {
+        const item = document.createElement('div');
+        item.className = 'record-item';
+        item.innerHTML = `
+            <span>${record['စဉ်']}. ${record['ကျောင်း']} (${record['စာရင်းအမှတ်']})</span>
+            <button class="edit-btn" data-index="${index}">ပြင်ဆင်မည်</button>
+        `;
+        container.appendChild(item);
+    });
+    // Add event listeners to new edit buttons
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const recordIndex = e.target.getAttribute('data-index');
+            openEditModal(recordIndex);
+        });
+    });
 }
 
-function hideAdminModal() {
-    document.getElementById('adminModal').style.display = 'none';
-    document.getElementById('adminPassword').value = '';
+function openEditModal(index) {
+    currentlyEditingIndex = index;
+    const record = billData[index];
+    document.getElementById('editModalTitle').textContent = `${record['ကျောင်း']} - ဒေတာပြင်ဆင်ခြင်း`;
+    const fieldsContainer = document.getElementById('editFieldsContainer');
+    fieldsContainer.innerHTML = '';
+
+    MONTH_HEADERS.forEach(month => {
+        const value = record[month] ? convertMyanmarToEnglishNumbers(record[month]) : '';
+        const fieldGroup = document.createElement('div');
+        fieldGroup.className = 'edit-field-group';
+        fieldGroup.innerHTML = `
+            <label for="edit_${month}">${month}</label>
+            <input type="text" id="edit_${month}" value="${value}" placeholder="ဘေလ်ပမာဏ" inputmode="numeric" pattern="[0-9]*">
+        `;
+        fieldsContainer.appendChild(fieldGroup);
+    });
+    editDataModal.style.display = 'block';
 }
 
-function showAdminPanel() {
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('mainContent').style.display = 'none';
-    generateBillEntryForm();
+function handleEditFormSubmit(e) {
+    e.preventDefault();
+    if (currentlyEditingIndex === null) return;
+
+    const record = billData[currentlyEditingIndex];
+    let hasChanges = false;
+    MONTH_HEADERS.forEach(month => {
+        const input = document.getElementById(`edit_${month}`);
+        const newValue = input.value.trim();
+        const newMyanmarValue = newValue ? convertEnglishToMyanmarNumbers(newValue) : '';
+        
+        if ((record[month] || '') !== newMyanmarValue) {
+            record[month] = newMyanmarValue;
+            hasChanges = true;
+        }
+    });
+
+    if (hasChanges) {
+        alert('အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။');
+        displaySummary(billData);
+        applyFiltersAndRender();
+    }
+    editDataModal.style.display = 'none';
+    currentlyEditingIndex = null;
 }
 
-function hideAdminPanel() {
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-    isAdminLoggedIn = false;
-}
 
+// --- ADMIN PANEL: ORIGINAL DATA ENTRY FUNCTIONS ---
 function generateBillEntryForm() {
     const container = document.getElementById('billEntryContainer');
     container.innerHTML = '';
-    
-    if (billData.length === 0) {
-        container.innerHTML = '<p>ဒေတာများ မရှိပါ။ ကျေးဇူးပြု၍ data.csv ဖိုင်ကို စစ်ဆေးပါ။</p>';
-        return;
-    }
+    if (billData.length === 0) return;
     
     billData.forEach((record, index) => {
         const row = document.createElement('div');
         row.className = 'bill-entry-row';
-        // *** THIS IS THE CHANGED LINE ***
         row.innerHTML = `
             <label>${record['ကျောင်း']} (${record['စာရင်းအမှတ်']})</label>
             <input type="text" id="bill_${index}" placeholder="ဘေလ်ပမာဏ" inputmode="numeric" pattern="[0-9]*">
@@ -132,46 +176,36 @@ function loadCurrentMonthData() {
         alert('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။');
         return;
     }
-    
     billData.forEach((record, index) => {
         const input = document.getElementById(`bill_${index}`);
-        if (input && record[selectedMonth]) {
-            const amount = convertMyanmarToEnglishNumbers(record[selectedMonth]);
-            input.value = amount || '';
-        } else {
-            input.value = ''; // Clear the input if no data for the month
+        if (input) {
+            const amount = record[selectedMonth] ? convertMyanmarToEnglishNumbers(record[selectedMonth]) : '';
+            input.value = amount;
         }
     });
 }
 
-function saveBillData() {
+function saveBillData(e) {
+    e.preventDefault();
     const selectedMonth = document.getElementById('entryMonth').value;
     if (!selectedMonth) {
         alert('ကျေးဇူးပြု၍ လကို ရွေးချယ်ပါ။');
         return;
     }
-    
     let hasChanges = false;
     billData.forEach((record, index) => {
         const input = document.getElementById(`bill_${index}`);
-        if (input) {
+        if (input && /^\d*$/.test(input.value.trim())) {
             const newValue = input.value.trim();
-            // Ensure only numbers are processed
-            if (/^\d*$/.test(newValue)) {
-                const myanmarValue = newValue ? convertEnglishToMyanmarNumbers(newValue) : '';
-                if (record[selectedMonth] !== myanmarValue) {
-                    record[selectedMonth] = myanmarValue;
-                    hasChanges = true;
-                }
-            } else {
-                alert(`"${record['ကျောင်း']}" အတွက် ထည့်သွင်းမှုသည် ဂဏန်းများသာ ဖြစ်ရပါမည်။`);
+            const myanmarValue = newValue ? convertEnglishToMyanmarNumbers(newValue) : '';
+            if ((record[selectedMonth] || '') !== myanmarValue) {
+                record[selectedMonth] = myanmarValue;
+                hasChanges = true;
             }
         }
     });
-    
     if (hasChanges) {
-        alert(`${selectedMonth} အတွက် ဒေတာများကို သိမ်းပြီးပါပြီ။ CSV ဖိုင်ကို ဒေါင်းလုဒ်လုပ်ပြီး GitHub မှာ အပ်ဒိတ်လုပ်ပါ။`);
-        // Refresh the main view
+        alert(`${selectedMonth} အတွက် ဒေတာများကို သိမ်းပြီးပါပြီ။`);
         displaySummary(billData);
         applyFiltersAndRender();
     } else {
@@ -179,202 +213,78 @@ function saveBillData() {
     }
 }
 
-// --- CORE LOGIC ---
-function applyFiltersAndRender() {
-    const schoolFilterValue = document.getElementById('filter-dropdown-ကျောင်း')?.value || '';
-    const monthFilterValue = document.getElementById('filter-dropdown-လ')?.value || 'all';
+// --- ADMIN LOGIN/LOGOUT & PANEL VISIBILITY ---
+function showAdminPanel() {
+    adminPanel.style.display = 'block';
+    mainContent.style.display = 'none';
+    generateBillEntryForm();
+    populateRecordList();
+}
 
-    let filteredData = billData;
-    if (schoolFilterValue) {
-        filteredData = billData.filter(record => record['ကျောင်း'] === schoolFilterValue);
+function hideAdminPanel() {
+    adminPanel.style.display = 'none';
+    mainContent.style.display = 'block';
+    isAdminLoggedIn = false;
+}
+
+function handleAdminLogin(e) {
+    e.preventDefault();
+    if (document.getElementById('adminPassword').value === ADMIN_PASSWORD) {
+        isAdminLoggedIn = true;
+        adminLoginModal.style.display = 'none';
+        document.getElementById('adminPassword').value = '';
+        showAdminPanel();
+    } else {
+        alert('မှားယွင်းသော password ဖြစ်ပါသည်။');
     }
+}
+
+// --- MAIN CONTENT DISPLAY LOGIC ---
+function applyFiltersAndRender() {
+    const schoolFilter = document.getElementById('filter-dropdown-ကျောင်း')?.value || '';
+    const monthFilter = document.getElementById('filter-dropdown-လ')?.value || 'all';
+    let filteredData = schoolFilter ? billData.filter(r => r['ကျောင်း'] === schoolFilter) : [...billData];
 
     let tableData = filteredData.map(record => {
-        let displayMonth = '';
         let displayAmount = 0;
-
-        if (monthFilterValue === 'all') {
+        let displayMonth = monthFilter;
+        if (monthFilter === 'all') {
             displayMonth = 'လအားလုံး (စုစုပေါင်း)';
-            displayAmount = MONTH_HEADERS.reduce((sum, month) => {
-                return sum + (parseInt(convertMyanmarToEnglishNumbers(record[month] || '0'), 10) || 0);
-            }, 0);
+            displayAmount = MONTH_HEADERS.reduce((sum, month) => sum + (parseInt(convertMyanmarToEnglishNumbers(record[month] || '0'), 10) || 0), 0);
         } else {
-            displayMonth = monthFilterValue;
-            displayAmount = parseInt(convertMyanmarToEnglishNumbers(record[monthFilterValue] || '0'), 10) || 0;
+            displayAmount = parseInt(convertMyanmarToEnglishNumbers(record[monthFilter] || '0'), 10) || 0;
         }
-
         return { ...record, displayMonth, displayAmount };
     });
 
-    if (monthFilterValue !== 'all') {
-        tableData.sort((a, b) => b.displayAmount - a.displayAmount);
-    } else {
-        tableData.sort((a, b) => {
-            const seqA = parseInt(convertMyanmarToEnglishNumbers(a['စဉ်'] || '0'), 10);
-            const seqB = parseInt(convertMyanmarToEnglishNumbers(b['စဉ်'] || '0'), 10);
-            return seqA - seqB;
-        });
-    }
-
+    tableData.sort((a, b) => monthFilter !== 'all' ? b.displayAmount - a.displayAmount : parseInt(a['စဉ်']) - parseInt(b['စဉ်']));
     renderTable(tableData);
 }
 
-// --- DISPLAY & RENDERING FUNCTIONS ---
 function displaySummary(data) {
     const summaryContainer = document.getElementById('summary-info');
-    const latestMonthWithData = getLatestMonthWithData(data);
-    
-    let latestMonthTotal = 0;
-    if (latestMonthWithData) {
-        latestMonthTotal = data.reduce((sum, record) => sum + (parseInt(convertMyanmarToEnglishNumbers(record[latestMonthWithData] || '0'), 10) || 0), 0);
-    }
-    
-    const yearTotal = data.reduce((totalSum, record) => {
-        return totalSum + MONTH_HEADERS.reduce((recordTotal, month) => recordTotal + (parseInt(convertMyanmarToEnglishNumbers(record[month] || '0'), 10) || 0), 0);
-    }, 0);
-
+    const latestMonth = getLatestMonthWithData(data);
+    const latestMonthTotal = latestMonth ? data.reduce((sum, r) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[latestMonth] || '0'), 10) || 0), 0) : 0;
+    const yearTotal = data.reduce((total, r) => total + MONTH_HEADERS.reduce((sum, m) => sum + (parseInt(convertMyanmarToEnglishNumbers(r[m] || '0'), 10) || 0), 0), 0);
     summaryContainer.innerHTML = `
-        <div class="summary-item">နောက်ဆုံးလ (${latestMonthWithData || 'N/A'}) စုစုပေါင်း = <strong>${formatNumber(latestMonthTotal)} ကျပ်</strong></div>
-        <div class="summary-item">ယခုနှစ် စုစုပေါင်း = <strong>${formatNumber(yearTotal)} ကျပ်</strong></div>
+        <div class="summary-item">နောက်ဆုံးလ (${latestMonth || 'N/A'}) စုစုပေါင်း = <strong>${convertEnglishToMyanmarNumbers(formatNumber(latestMonthTotal))} ကျပ်</strong></div>
+        <div class="summary-item">ယခုနှစ် စုစုပေါင်း = <strong>${convertEnglishToMyanmarNumbers(formatNumber(yearTotal))} ကျပ်</strong></div>
     `;
 }
 
 function renderTable(dataToRender) {
     const tbody = document.querySelector('#bill-table tbody');
     if (!tbody) return;
-    
     tbody.innerHTML = '';
-
     dataToRender.forEach((record, index) => {
         const row = tbody.insertRow();
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(String(index + 1));
         row.insertCell().textContent = record['ကျောင်း'] || '-';
-        row.insertCell().textContent = record['စာရင်းအမှတ်'] || '-';
-        row.insertCell().textContent = record['မီတာအမှတ်'] || '-';
+        row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['စာရင်းအမှတ်']) || '-';
+        row.insertCell().textContent = convertEnglishToMyanmarNumbers(record['မီတာအမှတ်']) || '-';
         row.insertCell().textContent = record.displayMonth;
         row.insertCell().textContent = convertEnglishToMyanmarNumbers(formatNumber(record.displayAmount));
     });
 }
 
-function setupFiltersAndTable(data, latestMonth) {
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
-    const table = document.createElement('table');
-    table.id = 'bill-table';
-    const thead = table.createTHead();
-    const headerRow = thead.insertRow();
-    DISPLAY_HEADERS.forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-    });
-
-    const filterRow = thead.insertRow();
-    filterRow.className = 'filter-row';
-    
-    filterRow.insertCell();
-    
-    const schoolTd = filterRow.insertCell();
-    const schoolFilter = document.createElement('select');
-    schoolFilter.className = 'filter-input';
-    schoolFilter.id = 'filter-dropdown-ကျောင်း';
-    schoolFilter.innerHTML = `<option value="">ကျောင်းအားလုံး</option>`;
-    [...new Set(data.map(r => r['ကျောင်း']))].sort().forEach(school => {
-        schoolFilter.innerHTML += `<option value="${school}">${school}</option>`;
-    });
-    schoolFilter.onchange = applyFiltersAndRender;
-    schoolTd.appendChild(schoolFilter);
-
-    filterRow.insertCell();
-    filterRow.insertCell();
-
-    const monthTd = filterRow.insertCell();
-    const monthFilter = document.createElement('select');
-    monthFilter.className = 'filter-input';
-    monthFilter.id = 'filter-dropdown-လ';
-    monthFilter.innerHTML = `<option value="all">လအားလုံး</option>`;
-    MONTH_HEADERS.forEach(month => {
-        monthFilter.innerHTML += `<option value="${month}">${month}</option>`;
-    });
-    if (latestMonth) {
-        monthFilter.value = latestMonth;
-    }
-    monthFilter.onchange = applyFiltersAndRender;
-    monthTd.appendChild(monthFilter);
-
-    filterRow.insertCell();
-
-    table.createTBody();
-    resultsContainer.appendChild(table);
-}
-
-function exportToPdf() {
-    window.print();
-}
-
-// --- EVENT LISTENERS ---
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const response = await fetch('data.csv');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}. 'data.csv' ဖိုင်ကို ရှာမတွေ့ပါ သို့မဟုတ် folder တစ်ခုတည်းတွင် မရှိပါ။`);
-        }
-        const csvText = await response.text();
-        billData = parseCSV(csvText);
-
-        if (billData.length === 0) {
-            throw new Error("'data.csv' ဖိုင်ထဲတွင် အချက်အလက်မရှိပါ သို့မဟုတ် format မှားယွင်းနေပါသည်။");
-        }
-        
-        const latestMonth = getLatestMonthWithData(billData);
-        
-        displaySummary(billData);
-        setupFiltersAndTable(billData, latestMonth);
-        applyFiltersAndRender();
-        
-    } catch (error) {
-        console.error("Error:", error);
-        document.getElementById('results').innerHTML = `<p style="color: red; font-weight: bold;">Error: ${error.message}</p>`;
-    }
-
-    // Admin button event listener
-    document.getElementById('adminBtn').addEventListener('click', showAdminModal);
-
-    // Modal close event listeners
-    document.querySelector('.close').addEventListener('click', hideAdminModal);
-    window.addEventListener('click', (event) => {
-        if (event.target === document.getElementById('adminModal')) {
-            hideAdminModal();
-        }
-    });
-
-    // Admin login form
-    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const password = document.getElementById('adminPassword').value;
-        if (password === ADMIN_PASSWORD) {
-            isAdminLoggedIn = true;
-            hideAdminModal();
-            showAdminPanel();
-        } else {
-            alert('မှားယွင်းသော password ဖြစ်ပါသည်။');
-        }
-    });
-
-    // Logout button
-    document.getElementById('logoutBtn').addEventListener('click', hideAdminPanel);
-
-    // Load data button
-    document.getElementById('loadDataBtn').addEventListener('click', loadCurrentMonthData);
-
-    // Data entry form
-    document.getElementById('dataEntryForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveBillData();
-    });
-
-    // Download CSV button
-    document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-        downloadCSV(billData);
-    });
-});
+function setupFiltersAndTable(data,
