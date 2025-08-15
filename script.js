@@ -94,6 +94,12 @@ function searchBill() {
     displayTable(filteredData);
 }
 
+// Function to handle PDF export
+function exportToPdf() {
+    // This command opens the browser's print dialog
+    window.print();
+}
+
 // Load data and display the full table when the page loads
 window.onload = async () => {
     try {
